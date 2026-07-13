@@ -13,6 +13,7 @@
 		6D2F148B280C20D000A3A2E5 /* SideEffectsMiddleware.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D2F1488280C20D000A3A2E5 /* SideEffectsMiddleware.swift */; };
 		6D2F148C280C20D000A3A2E5 /* Store.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D2F1489280C20D000A3A2E5 /* Store.swift */; };
 		6D2F148E280C211E00A3A2E5 /* ScreenViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D2F148D280C211E00A3A2E5 /* ScreenViewController.swift */; };
+		6D2F14A0280C300000A3A2E5 /* CursorCaptureMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D2F149F280C300000A3A2E5 /* CursorCaptureMonitor.swift */; };
 		6D41B09F2879FAB6007CEB2F /* MouseLocationSideEffect.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D41B09E2879FAB6007CEB2F /* MouseLocationSideEffect.swift */; };
 		6D41B0A12879FABE007CEB2F /* MouseLocationState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D41B0A02879FABE007CEB2F /* MouseLocationState.swift */; };
 		6D41B0A42879FBA8007CEB2F /* ScreenViewData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D41B0A32879FBA8007CEB2F /* ScreenViewData.swift */; };
@@ -30,6 +31,7 @@
 		6D2F1488280C20D000A3A2E5 /* SideEffectsMiddleware.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SideEffectsMiddleware.swift; sourceTree = "<group>"; };
 		6D2F1489280C20D000A3A2E5 /* Store.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Store.swift; sourceTree = "<group>"; };
 		6D2F148D280C211E00A3A2E5 /* ScreenViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ScreenViewController.swift; sourceTree = "<group>"; };
+		6D2F149F280C300000A3A2E5 /* CursorCaptureMonitor.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CursorCaptureMonitor.swift; sourceTree = "<group>"; };
 		6D36BEB92801A39200EAB869 /* CGVirtualDisplayPrivate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CGVirtualDisplayPrivate.h; sourceTree = "<group>"; };
 		6D36BEBA2801A40600EAB869 /* DeskPad-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "DeskPad-Bridging-Header.h"; sourceTree = "<group>"; };
 		6D41B09E2879FAB6007CEB2F /* MouseLocationSideEffect.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MouseLocationSideEffect.swift; sourceTree = "<group>"; };
@@ -91,6 +93,7 @@
 			children = (
 				6D2F148D280C211E00A3A2E5 /* ScreenViewController.swift */,
 				6D41B0A32879FBA8007CEB2F /* ScreenViewData.swift */,
+				6D2F149F280C300000A3A2E5 /* CursorCaptureMonitor.swift */,
 			);
 			path = Screen;
 			sourceTree = "<group>";
@@ -253,6 +256,7 @@
 				6D41B09F2879FAB6007CEB2F /* MouseLocationSideEffect.swift in Sources */,
 				6D41B0A42879FBA8007CEB2F /* ScreenViewData.swift in Sources */,
 				6D2F148E280C211E00A3A2E5 /* ScreenViewController.swift in Sources */,
+				6D2F14A0280C300000A3A2E5 /* CursorCaptureMonitor.swift in Sources */,
 				6DC044522801877F00281728 /* AppDelegate.swift in Sources */,
 				6DC04461280191EB00281728 /* main.swift in Sources */,
 			);

@@ -1,8 +1,26 @@
 import Cocoa
 import ReSwift
+import ScreenCaptureKit
 
 enum ScreenViewAction: Action {
     case setDisplayID(CGDirectDisplayID)
+}
+
+private class MirrorStreamOutput: NSObject, SCStreamOutput {
+    weak var targetView: NSView?
+
+    func stream(_: SCStream, didOutputSampleBuffer sampleBuffer: CMSampleBuffer, of type: SCStreamOutputType) {
+        guard
+            type == .screen,
+            let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer),
+            let surface = CVPixelBufferGetIOSurface(pixelBuffer)?.takeUnretainedValue()
+        else {
+            return
+        }
+        DispatchQueue.main.async { [weak self] in
+            self?.targetView?.layer?.contents = surface
+        }
+    }
 }
 
 class ScreenViewController: SubscriberViewController<ScreenViewData>, NSWindowDelegate {
@@ -13,13 +31,17 @@ class ScreenViewController: SubscriberViewController<ScreenViewData>, NSWindowDe
     }
 
     private var display: CGVirtualDisplay!
-    private var stream: CGDisplayStream?
+    private var stream: SCStream?
+    private let streamOutput = MirrorStreamOutput()
+    private let captureMonitor = CursorCaptureMonitor()
     private var isWindowHighlighted = false
     private var previousResolution: CGSize?
     private var previousScaleFactor: CGFloat?
 
     override func viewDidLoad() {
         super.viewDidLoad()
+
+        streamOutput.targetView = view
 
         let descriptor = CGVirtualDisplayDescriptor()
         descriptor.setDispatchQueue(DispatchQueue.main)
@@ -79,27 +101,53 @@ class ScreenViewController: SubscriberViewController<ScreenViewData>, NSWindowDe
         {
             previousResolution = viewData.resolution
             previousScaleFactor = viewData.scaleFactor
+            captureMonitor.end()
+            stream?.stopCapture(completionHandler: nil)
             stream = nil
             view.window?.setContentSize(viewData.resolution)
             view.window?.contentAspectRatio = viewData.resolution
             view.window?.center()
-            let stream = CGDisplayStream(
-                dispatchQueueDisplay: display.displayID,
-                outputWidth: Int(viewData.resolution.width * viewData.scaleFactor),
-                outputHeight: Int(viewData.resolution.height * viewData.scaleFactor),
-                pixelFormat: 1_111_970_369,
-                properties: [
-                    CGDisplayStream.showCursor: true,
-                ] as CFDictionary,
-                queue: .main,
-                handler: { [weak self] _, _, frameSurface, _ in
-                    if let surface = frameSurface {
-                        self?.view.layer?.contents = surface
-                    }
+            startStream(resolution: viewData.resolution, scaleFactor: viewData.scaleFactor)
+        }
+    }
+
+    private func startStream(resolution: CGSize, scaleFactor: CGFloat, attempt: Int = 1) {
+        let displayID = display.displayID
+        SCShareableContent.getExcludingDesktopWindows(false, onScreenWindowsOnly: false) { [weak self] content, _ in
+            DispatchQueue.main.async {
+                guard let self = self else {
+                    return
                 }
-            )
-            self.stream = stream
-            stream?.start()
+                guard
+                    resolution == self.previousResolution,
+                    scaleFactor == self.previousScaleFactor
+                else {
+                    return // configuration changed while we were fetching
+                }
+                guard let scDisplay = content?.displays.first(where: { $0.displayID == displayID }) else {
+                    // virtual display may not be listed yet right after (re)configuration
+                    if attempt < 5 {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                            self.startStream(resolution: resolution, scaleFactor: scaleFactor, attempt: attempt + 1)
+                        }
+                    }
+                    return
+                }
+                let filter = SCContentFilter(display: scDisplay, excludingWindows: [])
+                let configuration = SCStreamConfiguration()
+                configuration.width = Int(resolution.width * scaleFactor)
+                configuration.height = Int(resolution.height * scaleFactor)
+                configuration.showsCursor = true
+                configuration.minimumFrameInterval = CMTime(value: 1, timescale: 60)
+                let stream = SCStream(filter: filter, configuration: configuration, delegate: nil)
+                do {
+                    try stream.addStreamOutput(self.streamOutput, type: .screen, sampleHandlerQueue: .main)
+                    stream.startCapture(completionHandler: nil)
+                    self.stream = stream
+                } catch {
+                    return
+                }
+            }
         }
     }
 
@@ -116,7 +164,11 @@ class ScreenViewController: SubscriberViewController<ScreenViewData>, NSWindowDe
     }
 
     @objc private func didClickOnScreen(_ gestureRecognizer: NSGestureRecognizer) {
-        guard let screenResolution = previousResolution else {
+        guard
+            let screenResolution = previousResolution,
+            let window = view.window,
+            captureMonitor.canCapture
+        else {
             return
         }
         let clickedPoint = gestureRecognizer.location(in: view)
@@ -125,5 +177,6 @@ class ScreenViewController: SubscriberViewController<ScreenViewData>, NSWindowDe
             y: (view.frame.height - clickedPoint.y) / view.frame.height * screenResolution.height
         )
         store.dispatch(MouseLocationAction.requestMove(toPoint: onScreenPoint))
+        captureMonitor.begin(displayID: display.displayID, window: window)
     }
 }
