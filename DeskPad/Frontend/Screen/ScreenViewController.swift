@@ -64,10 +64,14 @@ class ScreenViewController: SubscriberViewController<ScreenViewData>, NSWindowDe
     override func update(with viewData: ScreenViewData) {
         if viewData.isWindowHighlighted != isWindowHighlighted {
             isWindowHighlighted = viewData.isWindowHighlighted
+            // The asset catalog colors are references to these system colors; fall back
+            // to them directly so the highlight still works without a compiled catalog.
             view.window?.backgroundColor = isWindowHighlighted
-                ? NSColor(named: "TitleBarActive")
-                : NSColor(named: "TitleBarInactive")
-            if isWindowHighlighted {
+                ? NSColor(named: "TitleBarActive") ?? .selectedContentBackgroundColor
+                : NSColor(named: "TitleBarInactive") ?? .windowBackgroundColor
+            // Only raise within the current space: pulling a fullscreen DeskPad forward
+            // from another space would drag the user out of whatever they are looking at.
+            if isWindowHighlighted, view.window?.isOnActiveSpace == true {
                 view.window?.orderFrontRegardless()
             }
         }
@@ -82,7 +86,7 @@ class ScreenViewController: SubscriberViewController<ScreenViewData>, NSWindowDe
             stream = nil
             view.window?.setContentSize(viewData.resolution)
             view.window?.contentAspectRatio = viewData.resolution
-            view.window?.center()
+            centerOnHostScreen()
             let stream = CGDisplayStream(
                 dispatchQueueDisplay: display.displayID,
                 outputWidth: Int(viewData.resolution.width * viewData.scaleFactor),
@@ -101,6 +105,24 @@ class ScreenViewController: SubscriberViewController<ScreenViewData>, NSWindowDe
             self.stream = stream
             stream?.start()
         }
+    }
+
+    /// Centers on a real screen rather than the virtual one, so the window never
+    /// lands on the display it is mirroring and shows itself recursively.
+    private func centerOnHostScreen() {
+        guard
+            let window = view.window,
+            let host = NSScreen.screens.first(where: { $0.displayID != display.displayID })
+        else {
+            view.window?.center()
+            return
+        }
+        let visibleFrame = host.visibleFrame
+        let size = window.frame.size
+        window.setFrameOrigin(NSPoint(
+            x: visibleFrame.midX - size.width / 2,
+            y: visibleFrame.midY - size.height / 2
+        ))
     }
 
     func windowWillResize(_ window: NSWindow, to frameSize: NSSize) -> NSSize {
